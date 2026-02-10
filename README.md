@@ -20,7 +20,7 @@ A powerful FastAPI + React application that uses multi-agent orchestration to an
   - Modern dark-themed React dashboard
   - Real-time document management
   - Agent execution trace visualization
-  - Live upload status feedback
+  - Live upload status feedback how are you
 
 ## 📋 Prerequisites
 
