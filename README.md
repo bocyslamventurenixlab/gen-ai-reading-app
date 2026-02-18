@@ -108,9 +108,8 @@ OPENROUTER_URL=https://openrouter.ai/api/v1
 ```sql
 CREATE TABLE documents (
   id BIGSERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  user_id UUID,
-  upload_date TIMESTAMP DEFAULT NOW(),
+  content TEXT,
+  metadata JSONB,
   created_at TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -119,7 +118,7 @@ CREATE TABLE documents (
 ```sql
 CREATE TABLE embeddings (
   id BIGSERIAL PRIMARY KEY,
-  doc_id BIGINT REFERENCES documents(id),
+  doc_id BIGINT REFERENCES documents(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   embedding VECTOR(1536),
   created_at TIMESTAMP DEFAULT NOW()
