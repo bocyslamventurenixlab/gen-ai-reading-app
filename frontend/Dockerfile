@@ -6,6 +6,9 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm ci
 
+# Copy environment variables (required for Vite build)
+COPY frontend/.env* ./
+
 # Copy source code
 COPY frontend/src ./src
 COPY frontend/public ./public
@@ -15,7 +18,7 @@ COPY frontend/tailwind.config.js ./
 COPY frontend/postcss.config.js ./
 COPY frontend/eslint.config.js ./
 
-# Build application
+# Build application (with environment variables)
 RUN npm run build
 
 # Production stage

@@ -38,13 +38,16 @@ const backendClient = {
     }
   },
 
-  async processQuery(documentId, query) {
+  async processQuery(documentId, query, userId) {
     try {
-      logger.info('Backend', `Processing query for doc_id: ${documentId}`);
+      logger.info('Backend', `Processing query for doc_id: ${documentId}, user: ${userId}`);
       
       const response = await fetch(`${BACKEND_URL}/process`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId  // Pass user ID to backend for RLS enforcement
+        },
         body: JSON.stringify({
           document_id: documentId,
           query: query

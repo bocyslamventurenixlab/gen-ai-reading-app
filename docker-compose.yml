@@ -6,46 +6,52 @@ services:
     build:
       context: .
       dockerfile: ./frontend/Dockerfile
-    container_name: gen-ai-frontend
+    container_name: agentic-read-frontend
     ports:
       - "3000:3000"
+    env_file:
+      - ./frontend/.env.local
     environment:
-      - NODE_ENV=production
-      - VITE_GATEWAY_URL=http://localhost:3001
+      - NODE_ENV=development
     depends_on:
       - gateway
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     networks:
-      - app-network
+      - agentic-read-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 40s
 
   # Gateway - Node.js API Gateway
   gateway:
     build:
       context: .
       dockerfile: ./gateway/Dockerfile
-    container_name: gen-ai-gateway
+    container_name: agentic-read-gateway
     ports:
       - "3001:3001"
+    env_file:
+      - ./gateway/.env
     environment:
       - NODE_ENV=development
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
       - BACKEND_URL=http://backend:8000
-      - GATEWAY_PORT=3001
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+    volumes:
+      - ./gateway/src:/app/src
     networks:
-      - app-network
+      - agentic-read-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
       start_period: 10s
 
@@ -54,26 +60,28 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-    container_name: gen-ai-backend
+    container_name: agentic-read-backend
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - NODE_ENV=development
     volumes:
-      - ./backend:/app
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
     networks:
-      - app-network
+      - agentic-read-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 20s
 
 networks:
-  app-network:
+  agentic-read-network:
     driver: bridge
 
 volumes:

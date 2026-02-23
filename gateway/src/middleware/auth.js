@@ -42,6 +42,9 @@ export const authMiddleware = async (req, res, next) => {
   }
 };
 
+// Export authMiddleware as verifyAuth for backwards compatibility
+export const verifyAuth = authMiddleware;
+
 export const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;

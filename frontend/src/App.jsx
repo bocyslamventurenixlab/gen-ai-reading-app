@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ShieldCheck, Search, Cpu, CheckSquare, Loader2, AlertTriangle, Send, FileText } from 'lucide-react';
+import { Upload, ShieldCheck, Search, Cpu, CheckSquare, Loader2, AlertTriangle, Send, FileText, LogOut } from 'lucide-react';
+import { useAuth } from './context/AuthContext';
+import Login from './components/Login';
 
-const App = () => {
+const AppContent = () => {
+  const { user, signOut } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [query, setQuery] = useState('');
@@ -22,9 +25,23 @@ const App = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await (await import('./lib/supabase')).supabase.auth.getSession();
+    const headers = {};
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+    return headers;
+  };
+
   const fetchDocs = async () => {
     try {
-      const res = await fetch(`${GATEWAY_URL}/documents`);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${GATEWAY_URL}/documents`, { headers });
+      if (res.status === 401) {
+        setError('Session expired. Please sign in again.');
+        return;
+      }
       const data = await res.json();
       setDocuments(data);
     } catch (err) {
@@ -51,6 +68,12 @@ const App = () => {
     let failedFiles = [];
 
     try {
+      const { data: { session } } = await (await import('./lib/supabase')).supabase.auth.getSession();
+      const authHeaders = {};
+      if (session?.access_token) {
+        authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         try {
@@ -59,8 +82,14 @@ const App = () => {
 
           const res = await fetch(`${GATEWAY_URL}/documents/upload`, {
             method: 'POST',
+            headers: authHeaders,
             body: formData
           });
+
+          if (res.status === 401) {
+            setError('Session expired. Please sign in again.');
+            throw new Error('Unauthorized');
+          }
 
           if (!res.ok) {
             throw new Error(`HTTP ${res.status}`);
@@ -113,11 +142,19 @@ const App = () => {
     try {
       console.log('Processing query:', { document_id: selectedDoc, query });
       
+      const headers = await getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
       const res = await fetch(`${GATEWAY_URL}/query/process`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ document_id: selectedDoc, query })
       });
+
+      if (res.status === 401) {
+        setError('Session expired. Please sign in again.');
+        return;
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
@@ -236,12 +273,16 @@ const App = () => {
               <p className="text-lg leading-relaxed text-slate-400 mb-8">{result.summary}</p>
               
               <div className="grid grid-cols-1 gap-4">
-                {result.key_points.map((pt, i) => (
-                  <div key={i} className="flex gap-4 p-4 bg-black/30 rounded-2xl border border-slate-800">
-                    <span className="text-emerald-500 font-mono">0{i+1}</span>
-                    <p className="text-sm">{pt}</p>
-                  </div>
-                ))}
+                {Array.isArray(result.key_points) && result.key_points.length > 0 ? (
+                  result.key_points.map((pt, i) => (
+                    <div key={i} className="flex gap-4 p-4 bg-black/30 rounded-2xl border border-slate-800">
+                      <span className="text-emerald-500 font-mono">0{i+1}</span>
+                      <p className="text-sm">{pt}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm italic">No key points generated</p>
+                )}
               </div>
             </div>
           )}
@@ -287,6 +328,16 @@ const App = () => {
       </div>
     </div>
   );
+};
+
+const App = () => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Login />;
+  }
+  
+  return <AppContent />;
 };
 
 export default App;

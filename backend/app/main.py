@@ -1,6 +1,6 @@
 """Main FastAPI application"""
 import os
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pypdf import PdfReader
 from openai import OpenAI
@@ -42,10 +42,15 @@ async def health_check():
 
 
 @app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(request: Request, file: UploadFile = File(...)):
     """Handles PDF upload, text extraction, embedding, and storage."""
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDFs allowed.")
+    
+    # Get user_id from request header (passed by gateway)
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
     
     try:
         # 1. Extract Text
@@ -55,9 +60,12 @@ async def upload_pdf(file: UploadFile = File(...)):
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"PDF parsing failed: {str(e)}")
 
-        # 2. Save Document Record
+        # 2. Save Document Record with user_id (required by RLS policy)
         try:
-            doc_resp = supabase.table("documents").insert({"title": file.filename}).execute()
+            doc_resp = supabase.table("documents").insert({
+                "title": file.filename,
+                "user_id": user_id
+            }).execute()
             doc_id = doc_resp.data[0]['id']
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Database insert failed: {str(e)}")
@@ -99,9 +107,14 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 
 @app.post("/process")
-async def process_query(request: QueryRequest):
+async def process_query(request_obj: Request, request: QueryRequest):
     """The Multi-Agent Orchestration Chain."""
     try:
+        # Get user_id from request header (passed by gateway)
+        user_id = request_obj.headers.get("X-User-ID")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
+        
         # Initialize agents
         security_agent = SecurityAgent(client)
         librarian_agent = LibrarianAgent(client, supabase)
@@ -110,7 +123,11 @@ async def process_query(request: QueryRequest):
         
         # Node 1: Security
         if not security_agent.verify_input(request.query):
-            supabase.table("security_logs").insert({"query": request.query, "type": "injection"}).execute()
+            supabase.table("security_logs").insert({
+                "query": request.query,
+                "type": "injection",
+                "user_id": user_id
+            }).execute()
             return {
                 "summary": "Request Blocked: Security Policy Violation.",
                 "key_points": [],
