@@ -12,7 +12,8 @@ const App = () => {
   const [uploadStatus, setUploadStatus] = useState('');
   const [error, setError] = useState('');
 
-  const API_BASE = "http://localhost:8000";
+  // Use gateway URL from environment or default to localhost
+  const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:3001";
 
   useEffect(() => { 
     fetchDocs();
@@ -22,9 +23,14 @@ const App = () => {
   }, []);
 
   const fetchDocs = async () => {
-    const res = await fetch(`${API_BASE}/documents`);
-    const data = await res.json();
-    setDocuments(data);
+    try {
+      const res = await fetch(`${GATEWAY_URL}/documents`);
+      const data = await res.json();
+      setDocuments(data);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setError('Failed to fetch documents');
+    }
   };
 
   const handleUpload = async (event) => {
@@ -51,7 +57,7 @@ const App = () => {
           const formData = new FormData();
           formData.append('file', file);
 
-          const res = await fetch(`${API_BASE}/upload`, {
+          const res = await fetch(`${GATEWAY_URL}/documents/upload`, {
             method: 'POST',
             body: formData
           });
@@ -107,7 +113,7 @@ const App = () => {
     try {
       console.log('Processing query:', { document_id: selectedDoc, query });
       
-      const res = await fetch(`${API_BASE}/process`, {
+      const res = await fetch(`${GATEWAY_URL}/query/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ document_id: selectedDoc, query })
