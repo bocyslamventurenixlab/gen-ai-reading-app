@@ -1,422 +1,286 @@
-# Agentic Read - Multi-Agent Document Intelligence System
+# Gen-AI Reading App
 
-A powerful FastAPI + React application that uses multi-agent orchestration to analyze PDF documents with semantic search, intelligent reasoning, and hallucination prevention.
+A sophisticated multi-service application for semantic document search and AI-powered analysis. The architecture uses a Node.js gateway to route requests between a React frontend and a Python FastAPI backend, all secured with Supabase authentication.
 
-## 🎯 Features
-
-- **Multi-Agent Architecture**
-  - 🔒 **SecurityAgent**: Input validation and jailbreak detection
-  - 📚 **LibrarianAgent**: Semantic vector search with cosine similarity
-  - 🧠 **AnalystAgent**: LLM-powered reasoning with tool calling
-  - ✏️ **EditorAgent**: Response verification and hallucination prevention
-
-- **Document Processing**
-  - PDF upload with automatic text extraction
-  - Vector embedding generation for semantic search
-  - Support for multiple document uploads
-  - Persistent storage with Supabase
-
-- **User Interface**
-  - Modern dark-themed React dashboard
-  - Real-time document management
-  - Agent execution trace visualization
-  - Live upload status feedback
-
-## 📋 Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- npm or yarn
-- Git
-
-## 🚀 Quick Start
-
-### 1. Clone & Setup Environment
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd gen-ai-202511-week11
-
-# Create .env file with your credentials
-cat > .env << EOF
-SUPABASE_URL="your_supabase_url"
-SUPABASE_KEY="your_supabase_key"
-OPENROUTER_API_KEY="your_openrouter_api_key"
-OPENROUTER_URL="https://openrouter.ai/api/v1"
-EOF
-```
-
-### 2. Backend Setup
-
-```bash
-# Install Python dependencies
-pip install fastapi uvicorn supabase python-multipart pypdf openai python-dotenv numpy
-
-# Start the backend server
-python main.py
-```
-
-The backend will run on `http://localhost:8000`
-
-### 3. Frontend Setup
-
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-The frontend will run on `http://localhost:5173/`
-
-### 4. Access the Application
-
-Open your browser and navigate to:
-```
-http://localhost:5173/
-```
-
----
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Supabase Configuration
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_public_key
-
-# OpenRouter API (LLM Provider)
-OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxx
-OPENROUTER_URL=https://openrouter.ai/api/v1
-```
-
-### Supabase Setup
-
-1. Create a Supabase project at https://supabase.com
-2. Create the following tables:
-
-**documents table:**
-```sql
-CREATE TABLE documents (
-  id BIGSERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  user_id UUID,
-  upload_date TIMESTAMP DEFAULT NOW(),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-**embeddings table:**
-```sql
-CREATE TABLE embeddings (
-  id BIGSERIAL PRIMARY KEY,
-  doc_id BIGINT REFERENCES documents(id),
-  content TEXT NOT NULL,
-  embedding VECTOR(1536),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-**security_logs table (optional):**
-```sql
-CREATE TABLE security_logs (
-  id BIGSERIAL PRIMARY KEY,
-  query TEXT,
-  type TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
----
-
-## 📁 Project Structure
+## Architecture
 
 ```
-gen-ai-202511-week11/
-├── main.py                          # FastAPI backend
-├── .env                            # Environment variables
-├── README.md                       # This file
-├── frontend/
+┌─────────────┐
+│   Browser   │
+│   (React)   │
+└──────┬──────┘
+       │ HTTP
+       ▼
+┌─────────────────────────────┐
+│ Gateway (Node.js/Express)   │
+│ - JWT Authentication        │
+│ - Request Routing           │
+│ - Error Handling            │
+└──────┬──────────────────────┘
+       │ HTTP
+       ▼
+┌──────────────────────────────┐
+│ Backend (Python/FastAPI)     │
+│ - Semantic Search            │
+│ - Multi-Agent Reasoning      │
+│ - Document Processing        │
+└──────┬──────────────────────┘
+       │ API
+       ▼
+┌──────────────────────────────┐
+│ Supabase                     │
+│ - PostgreSQL Database        │
+│ - Authentication             │
+│ - Vector Storage             │
+└──────────────────────────────┘
+```
+
+## Project Structure
+
+```
+gen-ai-reading-app/
+├── frontend/                 # React + Vite application
 │   ├── src/
-│   │   ├── App.jsx                # Main React component
-│   │   ├── main.jsx               # Entry point
-│   │   ├── index.css              # Tailwind styles
-│   │   └── App.css                # Component styles
-│   ├── public/                    # Static assets
-│   ├── package.json               # Frontend dependencies
-│   ├── vite.config.js             # Vite configuration
-│   ├── tailwind.config.js         # Tailwind configuration
-│   ├── postcss.config.js          # PostCSS configuration
-│   └── eslint.config.js           # ESLint configuration
+│   ├── package.json
+│   ├── Dockerfile
+│   └── vite.config.js
+├── gateway/                  # Node.js Express API Gateway
+│   ├── src/
+│   │   ├── index.js        # Main server
+│   │   ├── middleware/     # Auth, logging, errors
+│   │   ├── routes/         # API endpoints
+│   │   └── services/       # Backend client
+│   ├── package.json
+│   └── Dockerfile
+├── backend/                  # Python FastAPI backend
+│   ├── app/
+│   │   ├── main.py         # FastAPI app
+│   │   ├── agents.py       # Multi-agent system
+│   │   ├── embeddings.py   # Vector search
+│   │   └── models.py       # Pydantic models
+│   ├── requirements.txt
+│   └── Dockerfile
+├── database/
+│   └── migrations/         # SQL schema files
+├── docker-compose.yml      # Multi-container orchestration
+└── .env.example           # Environment variables template
 ```
 
----
+## Quick Start
 
-## 🔌 API Endpoints
+### Prerequisites
 
-### GET `/documents`
-Retrieve all uploaded documents.
+- Docker and Docker Compose installed
+- Supabase account with a project (free tier works)
+- OpenRouter API key (for LLM access)
 
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "title": "Sarah-Marketing Executive-2025.pdf",
-    "upload_date": "2026-02-02T10:35:29.340461+00:00"
-  }
-]
-```
-
-### POST `/upload`
-Upload a PDF file and create embeddings.
-
-**Request:**
-```bash
-curl -X POST http://localhost:8000/upload \
-  -F "file=@document.pdf"
-```
-
-**Response:**
-```json
-{
-  "message": "Upload & Embedding successful",
-  "document_id": 1
-}
-```
-
-### POST `/process`
-Process a query against a document using multi-agent orchestration.
-
-**Request:**
-```bash
-curl -X POST http://localhost:8000/process \
-  -H "Content-Type: application/json" \
-  -d '{
-    "document_id": 1,
-    "query": "Who is Sarah?"
-  }'
-```
-
-**Response:**
-```json
-{
-  "summary": "Sarah Thompson is a Marketing Director...",
-  "key_points": [
-    "Sarah Thompson is a Strategic Marketing Executive",
-    "Works at BrandSphere Global in New York",
-    "Over 10 years of experience"
-  ],
-  "confidence_score": 0.95,
-  "is_safe": true,
-  "trace": [
-    "Security Cleared",
-    "Semantic Retrieval Complete",
-    "Reasoning Verified",
-    "Schema Validated"
-  ]
-}
-```
-
----
-
-## 📖 Usage Guide
-
-### 1. Upload Documents
-
-1. Click the **"Upload PDF"** button in the sidebar
-2. Select one or more PDF files
-3. Wait for the success message: "✓ All X file(s) uploaded successfully!"
-4. Documents will appear in the **History** section
-
-### 2. Query Documents
-
-1. Select a document from the **History** list
-2. Type your question in the search box
-3. Press **Enter** or click the **Send** button
-4. View the results:
-   - **Agent Summary**: The main answer
-   - **Key Points**: Important extracted information
-   - **Agent Trace**: Execution path through the agents
-
-### 3. Monitor Agent Execution
-
-The right panel shows the **Agent Trace** visualization:
-- 🔒 **Security**: Checks for jailbreak attempts
-- 📚 **Retrieval**: Semantic search for relevant content
-- 🧠 **Reasoning**: LLM generates response
-- ✏️ **Validation**: Formats and verifies output
-
----
-
-## 🛠️ Troubleshooting
-
-### Backend Issues
-
-**Port 8000 already in use:**
-```bash
-# Kill the process using port 8000
-lsof -i :8000 | grep LISTEN | awk '{print $2}' | xargs kill -9
-```
-
-**Missing dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-**Supabase connection error:**
-- Verify `.env` file has correct SUPABASE_URL and SUPABASE_KEY
-- Check network connectivity to Supabase
-
-**Embedding errors:**
-- Ensure OPENROUTER_API_KEY is valid
-- Check OpenRouter account has available credits
-
-### Frontend Issues
-
-**Port 5173 already in use:**
-```bash
-cd frontend
-npm run dev -- --port 5174
-```
-
-**Tailwind CSS not loading:**
-```bash
-cd frontend
-npm install -D @tailwindcss/postcss
-npm run dev
-```
-
-**Cannot connect to backend:**
-- Verify backend is running on http://localhost:8000
-- Check CORS is enabled (it is by default)
-- Check browser console for detailed error messages
-
----
-
-## 🔍 Debug Logging
-
-The backend logs detailed information about each agent's execution:
+### 1. Clone and Setup
 
 ```bash
-# Watch logs in real-time
-tail -f /tmp/backend.log
+git clone <repository>
+cd gen-ai-reading-app
 
-# Filter by agent
-tail -f /tmp/backend.log | grep "\[Librarian\]"
-tail -f /tmp/backend.log | grep "\[Analyst\]"
-tail -f /tmp/backend.log | grep "\[Editor\]"
+# Copy environment template
+cp .env.example .env
+
+# Copy individual service templates
+cp backend/.env.example backend/.env
+cp gateway/.env.example gateway/.env
+cp frontend/.env.example frontend/.env
 ```
 
-### Log Format
+### 2. Configure Environment Variables
 
-```
-[Librarian] Embedding query: Who is Sarah?
-[Librarian] Found 3 embeddings
-[Librarian] Chunk 0: similarity = 0.4363
-[Librarian] Returning 3 chunks
-[Analyst] Processing query with context length: 2046
-[Editor] Parsed result: ['summary', 'key_points', 'confidence_score']
-```
+Edit `.env` with your credentials:
 
----
+```bash
+# Supabase (get from https://supabase.com)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key
 
-## 🧠 How It Works
+# OpenRouter (get from https://openrouter.ai)
+OPENROUTER_API_KEY=your-api-key
 
-### Multi-Agent Architecture
+# Frontend
+VITE_GATEWAY_URL=http://localhost:3001
 
-```
-User Query
-    ↓
-┌─────────────────────────┐
-│  SecurityAgent          │ ← Validates input
-└──────────┬──────────────┘
-           ↓
-┌─────────────────────────┐
-│  LibrarianAgent         │ ← Semantic search
-│  (Vector Similarity)    │
-└──────────┬──────────────┘
-           ↓
-┌─────────────────────────┐
-│  AnalystAgent           │ ← LLM reasoning
-└──────────┬──────────────┘
-           ↓
-┌─────────────────────────┐
-│  EditorAgent            │ ← Format & verify
-└──────────┬──────────────┘
-           ↓
-      Final Response
+# Gateway
+NODE_ENV=development
+BACKEND_URL=http://backend:8000
 ```
 
-### Vector Search Process
+### 3. Setup Supabase Database
 
-1. **Embed Query**: Convert user question to 1536-dim vector
-2. **Fetch Embeddings**: Get all document chunk embeddings
-3. **Calculate Similarity**: Cosine similarity score for each chunk
-4. **Rank Results**: Sort by similarity (0.0 to 1.0)
-5. **Return Top-5**: Most relevant chunks to LLM
+Run the SQL schema in your Supabase SQL editor:
 
-### Similarity Scoring
+```bash
+cat database/migrations/001_initial.sql
+```
 
-- **0.8-1.0**: Highly relevant (exact match)
-- **0.5-0.8**: Very relevant
-- **0.3-0.5**: Somewhat relevant
-- **0.0-0.3**: Low relevance
+This creates:
+- `documents` table - stores uploaded PDFs
+- `embeddings` table - stores vector embeddings for semantic search
+- `security_logs` table - tracks security events
 
----
+### 4. Run with Docker Compose
 
-## 📦 Dependencies
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Access the application
+# Frontend:  http://localhost:3000
+# Gateway:   http://localhost:3001
+# Backend:   http://localhost:8000 (API docs at /docs)
+```
+
+### 5. Use the Application
+
+1. Open http://localhost:3000 in your browser
+2. Click "Upload PDF" to add a document
+3. Select a document from the history list
+4. Ask questions about the document
+5. The multi-agent system will:
+   - Verify the query is safe
+   - Perform semantic search to find relevant content
+   - Reason about the context using an LLM
+   - Validate and format the response
+
+## Development
+
+Running services individually (useful during development):
 
 ### Backend
-- `fastapi` - Web framework
-- `uvicorn` - ASGI server
-- `supabase` - Vector database client
-- `openai` - LLM API client
-- `pypdf` - PDF text extraction
-- `numpy` - Vector calculations
-- `python-multipart` - File uploads
-- `python-dotenv` - Environment variables
+```bash
+cd backend
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+### Gateway
+```bash
+cd gateway
+npm install
+npm run dev
+```
 
 ### Frontend
-- `react` - UI framework
-- `vite` - Build tool
-- `tailwindcss` - Styling
-- `lucide-react` - Icons
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
----
+## API Endpoints
 
-## 🚀 Performance Tips
+### Gateway (Public API)
 
-1. **Batch Uploads**: Upload multiple PDFs at once to save time
-2. **Query Specificity**: More specific queries return better results
-3. **Context Size**: Larger documents take longer to search
-4. **Vector Indices**: For production, add Supabase vector indices for faster search
+- `GET /health` - Health check
+- `POST /documents/upload` - Upload a PDF
+- `GET /documents` - List all documents
+- `POST /query/process` - Query a document
 
----
+### Backend (Internal)
 
-## 📝 License
+- `GET /health` - Health check
+- `POST /upload` - Direct file upload (called by gateway)
+- `POST /process` - Process query (called by gateway)
+- `GET /documents` - List documents (called by gateway)
 
-MIT License - feel free to use this project for your own purposes.
+## Features
 
----
+### Multi-Agent System
 
-## 🤝 Support
+1. **SecurityAgent** - Validates input for injection attacks
+2. **LibrarianAgent** - Semantic search using embeddings (cosine similarity)
+3. **AnalystAgent** - Reasoning with context using LLM
+4. **EditorAgent** - Formats response and prevents hallucinations
 
-For issues or questions:
-1. Check the Troubleshooting section
-2. Review backend logs: `tail -f /tmp/backend.log`
-3. Check browser console for frontend errors
-4. Verify all environment variables are set correctly
+### Semantic Search
 
----
+- PDFs are chunked into ~1000 character segments
+- Each chunk is embedded using OpenAI's text-embedding-3-small
+- User queries are embedded and compared using cosine similarity
+- Top 5 most relevant chunks are passed to the analyst
 
-**Happy querying! 🚀**
+### Security
+
+- Supabase JWT authentication (optional auth in development)
+- Input validation for jailbreak attempts
+- Security event logging
+
+## Troubleshooting
+
+### Backend can't connect to Supabase
+
+```bash
+# Check your environment variables
+docker-compose exec backend env | grep SUPABASE
+```
+
+### Gateway can't reach backend
+
+```bash
+# Ensure backend is healthy
+docker-compose exec gateway curl http://backend:8000/health
+```
+
+### Frontend can't reach gateway
+
+```bash
+# Check gateway health
+curl http://localhost:3001/health
+
+# Check console in browser for CORS errors
+```
+
+### PDF upload fails
+
+- Ensure file is a valid PDF
+- Check file size (backend timeout after 5 minutes)
+- Review backend logs: `docker-compose logs backend`
+
+## Deployment to Railway
+
+### Prerequisites
+
+- Railway account
+- GitHub repository with this code
+
+### Deploy Steps
+
+1. Connect your GitHub repo to Railway
+2. Create a new Railway project
+3. Add services:
+   - Frontend (Node.js)
+   - Gateway (Node.js)
+   - Backend (Python)
+4. Set environment variables in each service
+5. Add plugins: PostgreSQL (optional, use Supabase instead)
+6. Configure domains for frontend and gateway
+
+### Configuration for Railway
+
+Each service's `Dockerfile` is already optimized for Railway:
+- Multi-stage builds for smaller images
+- Health checks included
+- Environment variable support
+- Port configuration via ENV or code
+
+## Contributing
+
+1. Create a feature branch
+2. Make changes
+3. Test with `docker-compose up`
+4. Submit a pull request
+
+## License
+
+MIT
+
+## Support
+
+For issues and questions:
+1. Check the README files in each service folder
+2. Review Docker logs: `docker-compose logs -f [service-name]`
+3. Check Supabase dashboard for database issues
