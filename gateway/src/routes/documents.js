@@ -4,12 +4,14 @@ import Busboy from 'busboy';
 import FormData from 'form-data';
 import http from 'http';
 import logger from '../middleware/logger.js';
+import { verifyAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post('/upload', (req, res) => {
+router.post('/upload', verifyAuth, (req, res) => {
   try {
-    logger.info('Documents', 'Received upload request');
+    const userId = req.user?.id;
+    logger.info('Documents', `Upload request from user: ${userId}`);
     
     const bb = Busboy({ headers: req.headers });
     const files = {};
@@ -63,7 +65,10 @@ router.post('/upload', (req, res) => {
         port: backendURL.port || 8000,
         path: backendURL.pathname,
         method: 'POST',
-        headers: form.getHeaders()
+        headers: {
+          ...form.getHeaders(),
+          'X-User-ID': userId  // Pass user ID to backend for RLS enforcement
+        }
       };
       
       logger.debug('Documents', `Forwarding to ${backendURL.toString()}`);
@@ -108,13 +113,17 @@ router.post('/upload', (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', verifyAuth, async (req, res) => {
   try {
-    logger.info('Documents', 'Fetching documents list');
+    const userId = req.user?.id;
+    logger.info('Documents', `Fetching documents for user: ${userId}`);
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
     
     const response = await fetch(`${BACKEND_URL}/documents`, {
-      method: 'GET'
+      method: 'GET',
+      headers: {
+        'X-User-ID': userId  // Pass user ID to backend for RLS enforcement
+      }
     });
     
     if (!response.ok) {

@@ -105,7 +105,14 @@ class EditorAgent:
                 response_format={"type": "json_object"}
             )
             
+            # Check if response has choices
+            if not response or not response.choices or len(response.choices) == 0:
+                raise ValueError(f"Invalid LLM response: {response}")
+            
             result_text = response.choices[0].message.content
+            if not result_text:
+                raise ValueError("LLM returned empty content")
+            
             print(f"[Editor] Raw response: {result_text[:200]}")
             
             result = json.loads(result_text)

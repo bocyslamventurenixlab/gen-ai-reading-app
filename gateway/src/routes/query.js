@@ -2,12 +2,14 @@
 import express from 'express';
 import backendClient from '../services/pythonBackendClient.js';
 import logger from '../middleware/logger.js';
+import { verifyAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post('/process', async (req, res) => {
+router.post('/process', verifyAuth, async (req, res) => {
   try {
     const { document_id, query } = req.body;
+    const userId = req.user?.id;
 
     // Validation
     if (!document_id || !query) {
@@ -16,10 +18,10 @@ router.post('/process', async (req, res) => {
       });
     }
 
-    logger.info('Query', `Processing query for doc_id: ${document_id}`);
+    logger.info('Query', `Processing query for doc_id: ${document_id}, user: ${userId}`);
 
-    // Call backend
-    const result = await backendClient.processQuery(document_id, query);
+    // Call backend with user context
+    const result = await backendClient.processQuery(document_id, query, userId);
 
     logger.info('Query', 'Query processed successfully');
     res.json(result);
