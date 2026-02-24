@@ -21,12 +21,6 @@ services:
     networks:
       - agentic-read-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # Gateway - Node.js API Gateway
   gateway:
@@ -48,12 +42,6 @@ services:
     networks:
       - agentic-read-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # Backend - Python FastAPI
   backend:
@@ -73,12 +61,6 @@ services:
     networks:
       - agentic-read-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
 networks:
   agentic-read-network:
