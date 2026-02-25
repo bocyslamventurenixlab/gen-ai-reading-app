@@ -15,7 +15,7 @@ def get_embedding(client: OpenAI, text: str) -> List[float]:
     return response.data[0].embedding
 
 
-def retrieve_semantic(supabase: Client, doc_id: int, query: str, client: OpenAI) -> str:
+def retrieve_semantic(supabase: Client, doc_id: int, query: str, client: OpenAI, user_id: str = None) -> str:
     """Perform semantic search on document embeddings."""
     try:
         # 1. Embed the user's query
@@ -24,7 +24,8 @@ def retrieve_semantic(supabase: Client, doc_id: int, query: str, client: OpenAI)
         print(f"[Retrieval] Query vector shape: {len(query_vector)}")
         
         # 2. Query embeddings table for the document
-        print(f"[Retrieval] Fetching embeddings for doc_id: {doc_id}")
+        print(f"[Retrieval] Fetching embeddings for doc_id: {doc_id}, user_id: {user_id}")
+        # Note: embeddings table doesn't have user_id column - RLS policy enforces via document ownership
         response = supabase.table("embeddings").select("*").eq("doc_id", doc_id).execute()
         
         if not response.data or len(response.data) == 0:

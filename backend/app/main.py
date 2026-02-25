@@ -53,6 +53,16 @@ async def upload_pdf(request: Request, file: UploadFile = File(...)):
         raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
     
     try:
+        # 0. Ensure user exists in users table (create if not present)
+        try:
+            supabase.table("users").insert({
+                "id": user_id,
+                "email": f"user-{user_id[:8]}@app.local"  # Placeholder email
+            }).execute()
+        except Exception as e:
+            # User might already exist, continue
+            print(f"User creation/check: {str(e)}")
+        
         # 1. Extract Text
         try:
             reader = PdfReader(file.file)
@@ -103,7 +113,6 @@ async def upload_pdf(request: Request, file: UploadFile = File(...)):
     except Exception as e:
         print(f"Error during upload: {e}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/process")
@@ -114,6 +123,16 @@ async def process_query(request_obj: Request, request: QueryRequest):
         user_id = request_obj.headers.get("X-User-ID")
         if not user_id:
             raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
+        
+        # Ensure user exists in users table (create if not present)
+        try:
+            supabase.table("users").insert({
+                "id": user_id,
+                "email": f"user-{user_id[:8]}@app.local"  # Placeholder email
+            }).execute()
+        except Exception as e:
+            # User might already exist, continue
+            print(f"User creation/check in /process: {str(e)}")
         
         # Initialize agents
         security_agent = SecurityAgent(client)
@@ -136,7 +155,7 @@ async def process_query(request_obj: Request, request: QueryRequest):
             }
 
         # Node 2: Librarian (Semantic Search)
-        context = librarian_agent.retrieve(request.document_id, request.query)
+        context = librarian_agent.retrieve(request.document_id, request.query, user_id)
         
         # Node 3: Analyst (Reasoning)
         analysis_draft = analyst_agent.reason(context, request.query)
@@ -167,9 +186,15 @@ async def process_query(request_obj: Request, request: QueryRequest):
 
 
 @app.get("/documents")
-async def get_documents():
-    """Get all documents."""
-    response = supabase.table("documents").select("*").order("upload_date", desc=True).execute()
+async def get_documents(request: Request):
+    """Get all documents for the authenticated user."""
+    # Get user_id from request header (passed by gateway)
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
+    
+    # Filter documents by user (enforce RLS at application level)
+    response = supabase.table("documents").select("*").eq("user_id", user_id).order("upload_date", desc=True).execute()
     return response.data
 
 

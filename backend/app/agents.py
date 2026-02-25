@@ -27,8 +27,8 @@ class LibrarianAgent:
         self.client = client
         self.supabase = supabase
     
-    def retrieve(self, doc_id: int, query: str) -> str:
-        return retrieve_semantic(self.supabase, doc_id, query, self.client)
+    def retrieve(self, doc_id: int, query: str, user_id: str = None) -> str:
+        return retrieve_semantic(self.supabase, doc_id, query, self.client, user_id)
 
 
 class AnalystAgent:
