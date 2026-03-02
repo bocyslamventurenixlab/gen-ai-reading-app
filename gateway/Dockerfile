@@ -2,9 +2,9 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY gateway/package*.json ./
-RUN npm ci
+# Copy and install dependencies first
+COPY gateway/package.json gateway/package-lock.json* ./
+RUN npm install
 
 # Copy application code
 COPY gateway/src ./src
