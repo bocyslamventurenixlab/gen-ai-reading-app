@@ -6,6 +6,10 @@ services:
     build:
       context: .
       dockerfile: ./frontend/Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_GATEWAY_URL=${VITE_GATEWAY_URL:-http://localhost:3001}
     container_name: agentic-read-frontend
     ports:
       - "3000:3000"
