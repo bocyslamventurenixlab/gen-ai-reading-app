@@ -3,11 +3,11 @@ FROM node:20-slim
 WORKDIR /app
 
 # Copy and install dependencies first
-COPY gateway/package.json gateway/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm install
 
 # Copy application code
-COPY gateway/src ./src
+COPY src ./src
 
 # Create .env if not exists
 RUN touch .env

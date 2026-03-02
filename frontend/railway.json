@@ -5,8 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "port": 3001,
-    "healthcheckPath": "/health",
+    "port": 3000,
     "restartPolicyType": "ON_FAILURE"
   }
 }
