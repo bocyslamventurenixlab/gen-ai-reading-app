@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Gen-AI Reading App - Multi-service application",
   "scripts": {
-    "start": "npm run start:gateway",
-    "start:gateway": "cd gateway && npm start",
+    "start": "node gateway/src/index.js",
+    "start:gateway": "cd gateway && npm install && node src/index.js",
     "start:frontend": "cd frontend && npm run build",
     "start:all": "docker-compose up"
   },
