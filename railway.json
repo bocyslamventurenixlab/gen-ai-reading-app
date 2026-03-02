@@ -1,10 +1,41 @@
 {
   "$schema": "https://cdn.railway.app/railway-schema.json",
-  "build": {
-    "builder": "dockerfile",
-    "dockerfile": "gateway/Dockerfile"
-  },
-  "deploy": {
-    "port": 3001
+  "services": {
+    "gateway": {
+      "build": {
+        "builder": "dockerfile",
+        "dockerfile": "gateway/Dockerfile"
+      },
+      "deploy": {
+        "port": 3001
+      },
+      "variables": {
+        "NODE_ENV": "production"
+      }
+    },
+    "backend": {
+      "build": {
+        "builder": "dockerfile",
+        "dockerfile": "backend/Dockerfile"
+      },
+      "deploy": {
+        "port": 8000
+      },
+      "variables": {
+        "ENVIRONMENT": "production"
+      }
+    },
+    "frontend": {
+      "build": {
+        "builder": "dockerfile",
+        "dockerfile": "frontend/Dockerfile"
+      },
+      "deploy": {
+        "port": 3000
+      },
+      "variables": {
+        "NODE_ENV": "production"
+      }
+    }
   }
 }
