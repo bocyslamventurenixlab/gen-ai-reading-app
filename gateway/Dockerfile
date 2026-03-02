@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY gateway/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy application code
 COPY gateway/src ./src
