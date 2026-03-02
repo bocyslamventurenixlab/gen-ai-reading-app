@@ -3,20 +3,20 @@ FROM node:20-slim AS build
 WORKDIR /app
 
 # Install dependencies
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
 
 # Copy environment variables (required for Vite build)
-COPY .env* ./
+COPY frontend/.env* ./
 
 # Copy source code
-COPY src ./src
-COPY public ./public
-COPY *.html ./
-COPY vite.config.js ./
-COPY tailwind.config.js ./
-COPY postcss.config.js ./
-COPY eslint.config.js ./
+COPY frontend/src ./src
+COPY frontend/public ./public
+COPY frontend/*.html ./
+COPY frontend/vite.config.js ./
+COPY frontend/tailwind.config.js ./
+COPY frontend/postcss.config.js ./
+COPY frontend/eslint.config.js ./
 
 # Build application (with environment variables)
 RUN npm run build
