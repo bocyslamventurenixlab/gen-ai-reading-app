@@ -1,4 +1,13 @@
 {
+  "name": "gen-ai-reading-app",
+  "version": "1.0.0",
+  "description": "Gen-AI Reading App - Multi-service application",
+  "scripts": {
+    "start": "npm run start:gateway",
+    "start:gateway": "cd gateway && npm start",
+    "start:frontend": "cd frontend && npm run build",
+    "start:all": "docker-compose up"
+  },
   "dependencies": {
     "lucide-react": "^0.563.0"
   }
