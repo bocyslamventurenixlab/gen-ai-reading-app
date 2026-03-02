@@ -16,6 +16,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# Exception: frontend source lib is not a Python lib dir
+!frontend/src/lib/
 parts/
 sdist/
 var/
