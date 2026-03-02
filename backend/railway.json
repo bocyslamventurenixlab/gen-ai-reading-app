@@ -2,7 +2,7 @@
   "$schema": "https://cdn.railway.app/railway-schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
     "port": 8000,
