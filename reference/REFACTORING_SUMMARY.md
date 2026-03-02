@@ -53,7 +53,7 @@
 **Files Created:**
 - `backend/Dockerfile` - Python 3.11 multi-stage
 - `gateway/Dockerfile` - Node.js 18 with health checks
-- `frontend/Dockerfile` - Node.js 18 multi-stage build
+- `frontend/Dockerfile` - Node.js 20.19 multi-stage build (Vite requires Node 20.19+)
 - `docker-compose.yml` - Service orchestration
 - `.dockerignore` files for each service
 

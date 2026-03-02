@@ -14,14 +14,15 @@ const AppContent = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [error, setError] = useState('');
+  const [isFetching, setIsFetching] = useState(false);  // Prevent concurrent requests
 
   // Use gateway URL from environment or default to localhost
   const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:3001";
 
   useEffect(() => { 
     fetchDocs();
-    // Refresh documents every 5 seconds
-    const interval = setInterval(fetchDocs, 5000);
+    // Refresh documents every 30 seconds (reduced from 5s to prevent timeouts)
+    const interval = setInterval(fetchDocs, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -35,7 +36,14 @@ const AppContent = () => {
   };
 
   const fetchDocs = async () => {
+    // Prevent concurrent requests
+    if (isFetching) {
+      console.debug('fetchDocs already in progress, skipping');
+      return;
+    }
+    
     try {
+      setIsFetching(true);
       const headers = await getAuthHeaders();
       const res = await fetch(`${GATEWAY_URL}/documents`, { headers });
       if (res.status === 401) {
@@ -47,6 +55,8 @@ const AppContent = () => {
     } catch (err) {
       console.error('Error fetching documents:', err);
       setError('Failed to fetch documents');
+    } finally {
+      setIsFetching(false);
     }
   };
 

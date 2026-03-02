@@ -64,39 +64,17 @@ BACKEND_URL=http://backend:8000
 
 1. In Supabase dashboard, go to **SQL Editor**
 2. Click **New Query**
-3. Copy-paste from `database/migrations/001_initial.sql`:
-
-```sql
--- Create documents table
-create table documents (
-  id bigserial primary key,
-  title text not null,
-  upload_date timestamp default now(),
-  created_at timestamp default now()
-);
-
--- Create embeddings table
-create table embeddings (
-  id bigserial primary key,
-  doc_id bigint references documents(id) on delete cascade,
-  content text not null,
-  embedding vector(1536),
-  created_at timestamp default now()
-);
-
--- Create security_logs table
-create table security_logs (
-  id bigserial primary key,
-  query text,
-  type text,
-  created_at timestamp default now()
-);
-
--- Create indexes for performance
-create index idx_embeddings_doc_id on embeddings(doc_id);
-```
-
+3. Copy-paste the entire contents of `database/migrations/001_initial.sql`
 4. Click **Run**
+
+The migration will:
+- ✅ Create all required tables (users, documents, embeddings, security_logs)
+- ✅ Enable Row Level Security (RLS)
+- ✅ Create RLS policies for user isolation
+- ✅ Create vector similarity search function
+- ✅ Create performance indexes
+
+**Note:** The schema includes UUID support for Supabase Auth and full RLS enforcement.
 
 ## Step 4: Test in Codespace
 
