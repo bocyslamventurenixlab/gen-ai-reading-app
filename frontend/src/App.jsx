@@ -198,7 +198,7 @@ const AppContent = () => {
           </div>
 
           <div className="bg-slate-900/30 p-4 rounded-2xl border border-slate-800/50 space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">History</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">Upload History</h2>
             
             {/* Upload Section */}
             <div className="relative">
