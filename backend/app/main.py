@@ -193,9 +193,13 @@ async def get_documents(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
     
-    # Filter documents by user (enforce RLS at application level)
-    response = supabase.table("documents").select("*").eq("user_id", user_id).order("upload_date", desc=True).execute()
-    return response.data
+    try:
+        # Filter documents by user (enforce RLS at application level)
+        response = supabase.table("documents").select("*").eq("user_id", user_id).order("upload_date", desc=True).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error fetching documents: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch documents: {str(e)}")
 
 
 if __name__ == "__main__":

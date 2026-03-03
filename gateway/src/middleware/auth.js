@@ -14,7 +14,7 @@ export const authMiddleware = async (req, res, next) => {
     // For development/testing, allow requests without auth token
     if (process.env.NODE_ENV === 'development' && !authHeader) {
       logger.debug('Auth', 'Development mode: allowing unauthenticated request');
-      req.user = { id: 'dev-user', email: 'dev@example.com' };
+      req.user = { id: '00000000-0000-0000-0000-000000000001', email: 'dev@example.com' };
       return next();
     }
 
