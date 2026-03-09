@@ -1,0 +1,13 @@
+{
+  "name": "gen-ai-reading-app",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ]
+    }
+  }
+}
