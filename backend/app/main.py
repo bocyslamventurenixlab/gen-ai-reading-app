@@ -1,5 +1,7 @@
 """Main FastAPI application"""
 import os
+import re
+import tempfile
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pypdf import PdfReader
@@ -7,7 +9,7 @@ from openai import OpenAI
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-from .models import QueryRequest
+from .models import QueryRequest, ScrapeRequest
 from .agents import SecurityAgent, LibrarianAgent, AnalystAgent, EditorAgent
 from .embeddings import get_embedding
 
@@ -183,6 +185,109 @@ async def process_query(request_obj: Request, request: QueryRequest):
             "trace": ["Error encountered"],
             "error": str(e)
         }
+
+
+@app.post("/scrape")
+async def scrape_url(request_obj: Request, body: ScrapeRequest):
+    """Scrape a URL using Playwright, extract text, generate PDF, embed and store as a document."""
+    user_id = request_obj.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User ID is required (X-User-ID header missing)")
+
+    url = body.url.strip()
+    if not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="Invalid URL. Must start with http:// or https://")
+
+    try:
+        # Ensure user exists
+        try:
+            supabase.table("users").insert({
+                "id": user_id,
+                "email": f"user-{user_id[:8]}@app.local"
+            }).execute()
+        except Exception:
+            pass
+
+        # Use Playwright to scrape
+        from playwright.async_api import async_playwright
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+            )
+            page = await browser.new_page()
+
+            # Try domcontentloaded first (fast), fall back to just load
+            try:
+                await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                # Give JS a moment to render dynamic content
+                await page.wait_for_timeout(2000)
+            except Exception:
+                # Last resort: just wait for load event
+                await page.goto(url, wait_until="load", timeout=45000)
+
+            page_title = await page.title() or url
+
+            # Extract readable text (remove scripts, styles, nav, footer)
+            full_text = await page.evaluate("""
+                () => {
+                    const remove = document.querySelectorAll('script, style, nav, footer, header, noscript');
+                    remove.forEach(el => el.remove());
+                    return document.body ? document.body.innerText : '';
+                }
+            """)
+
+            # Generate PDF to a temp file
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                pdf_path = tmp.name
+            await page.pdf(path=pdf_path, format="A4", print_background=True)
+
+            await browser.close()
+
+        # Save document record
+        safe_title = f"[Web] {page_title[:80]}"
+        doc_resp = supabase.table("documents").insert({
+            "title": safe_title,
+            "user_id": user_id
+        }).execute()
+        doc_id = doc_resp.data[0]["id"]
+
+        # Chunk and embed text
+        chunks = [full_text[i:i+1000] for i in range(0, len(full_text), 1000)]
+        embedding_data = []
+        for chunk in chunks:
+            if len(chunk.strip()) < 10:
+                continue
+            try:
+                vector = get_embedding(client, chunk)
+                embedding_data.append({
+                    "doc_id": doc_id,
+                    "content": chunk,
+                    "embedding": vector
+                })
+            except Exception as e:
+                print(f"Warning: Failed to embed chunk: {str(e)}")
+
+        if embedding_data:
+            supabase.table("embeddings").insert(embedding_data).execute()
+
+        # Clean up temp PDF
+        os.unlink(pdf_path)
+
+        return {
+            "message": "URL scraped and embedded successfully",
+            "document_id": doc_id,
+            "title": safe_title,
+            "chunks_embedded": len(embedding_data)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error scraping URL: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Scrape failed: {str(e)}")
 
 
 @app.get("/documents")

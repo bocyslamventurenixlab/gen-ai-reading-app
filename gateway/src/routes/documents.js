@@ -113,6 +113,40 @@ router.post('/upload', verifyAuth, (req, res) => {
   }
 });
 
+router.post('/scrape', verifyAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { url } = req.body;
+    logger.info('Documents', `Scrape request from user: ${userId} for URL: ${url}`);
+
+    if (!url) {
+      return res.status(400).json({ error: 'url is required' });
+    }
+
+    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+    const response = await fetch(`${BACKEND_URL}/scrape`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-ID': userId
+      },
+      body: JSON.stringify({ url })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      logger.error('Documents', `Scrape backend error: ${response.status}`);
+      return res.status(response.status).json(data);
+    }
+
+    logger.info('Documents', `Scrape successful, doc_id: ${data.document_id}`);
+    return res.status(200).json(data);
+  } catch (err) {
+    logger.error('Documents', 'Scrape handler error', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', verifyAuth, async (req, res) => {
   try {
     const userId = req.user?.id;

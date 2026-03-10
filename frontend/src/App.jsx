@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ShieldCheck, Search, Cpu, CheckSquare, Loader2, AlertTriangle, Send, FileText, LogOut } from 'lucide-react';
+import { Upload, ShieldCheck, Search, Cpu, CheckSquare, Loader2, AlertTriangle, Send, FileText, LogOut, Globe } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Login';
 
@@ -13,6 +13,9 @@ const AppContent = () => {
   const [trace, setTrace] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState('');
   const [error, setError] = useState('');
   const [isFetching, setIsFetching] = useState(false);  // Prevent concurrent requests
 
@@ -133,6 +136,39 @@ const AppContent = () => {
     }
   };
 
+  const handleScrape = async () => {
+    if (!scrapeUrl.trim()) return;
+    if (!scrapeUrl.startsWith('http://') && !scrapeUrl.startsWith('https://')) {
+      setScrapeStatus('URL must start with http:// or https://');
+      return;
+    }
+    setScraping(true);
+    setScrapeStatus('Scraping page...');
+    try {
+      const headers = await getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+      const res = await fetch(`${GATEWAY_URL}/documents/scrape`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ url: scrapeUrl.trim() })
+      });
+      if (res.status === 401) { setScrapeStatus('Session expired. Please sign in again.'); return; }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+        throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setScrapeStatus(`✓ Scraped! "${data.title}" (${data.chunks_embedded} chunks)`);
+      setScrapeUrl('');
+      await fetchDocs();
+      setTimeout(() => setScrapeStatus(''), 4000);
+    } catch (err) {
+      setScrapeStatus(`✗ ${err.message}`);
+    } finally {
+      setScraping(false);
+    }
+  };
+
   const handleProcess = async () => {
     if (!selectedDoc) {
       setError('Please select a document first');
@@ -223,6 +259,37 @@ const AppContent = () => {
               {uploadStatus && (
                 <p className={`text-xs mt-2 p-2 rounded ${uploadStatus.startsWith('✓') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
                   {uploadStatus}
+                </p>
+              )}
+            </div>
+
+            {/* URL Scrape Section */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="url"
+                    value={scrapeUrl}
+                    onChange={(e) => setScrapeUrl(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !scraping && handleScrape()}
+                    placeholder="https://example.com"
+                    disabled={scraping}
+                    className="w-full bg-black/40 border border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs focus:ring-2 focus:ring-blue-500/50 outline-none disabled:opacity-50 placeholder:text-slate-600"
+                  />
+                </div>
+                <button
+                  onClick={handleScrape}
+                  disabled={scraping || !scrapeUrl.trim()}
+                  className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-xl text-xs font-semibold text-blue-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {scraping ? <Loader2 size={13} className="animate-spin" /> : <Globe size={13} />}
+                  {scraping ? '' : 'Scrape'}
+                </button>
+              </div>
+              {scrapeStatus && (
+                <p className={`text-xs p-2 rounded ${scrapeStatus.startsWith('✓') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                  {scrapeStatus}
                 </p>
               )}
             </div>
