@@ -1,0 +1,8 @@
+{
+    "servers": {
+        "context7": {
+            "command": "/home/codespace/nvm/current/bin/npx",
+            "args": ["-y", "@upstash/context7-mcp@latest"]
+        }
+    }
+}
