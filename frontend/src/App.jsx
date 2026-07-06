@@ -256,7 +256,7 @@ const AppContent = () => {
             
             {/* Scrape URL */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-earth-dark">Web Content (New Agent)</label>
+              <label className="text-xs font-semibold text-earth-dark">Web Content</label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <LinkIcon size={14} className="absolute left-3 top-3 text-earth-dark/40" />
