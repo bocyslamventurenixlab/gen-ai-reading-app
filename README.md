@@ -86,7 +86,7 @@ cp .env.example .env
 # Copy individual service templates
 cp backend/.env.example backend/.env
 cp gateway/.env.example gateway/.env
-cp frontend/.env.example frontend/.env
+cp frontend/.env.example frontend/.env.local
 ```
 
 ### 2. Configure Environment Variables
