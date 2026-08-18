@@ -205,7 +205,7 @@ const AppContent = () => {
           <div className="bg-olive-dark text-cream p-2 rounded-lg shadow-sm">
             <FileText size={20} strokeWidth={2.5} />
           </div>
-          <h1 className="font-serif font-bold text-xl tracking-tight">Agentic Reader</h1>
+          <h1 className="font-serif font-bold text-xl tracking-tight">Intelligence Reader</h1>
         </div>
         
         <div className="flex items-center gap-5">
